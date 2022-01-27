@@ -1,7 +1,8 @@
-from flask import Flask, json, request
+from flask import Flask, json, request, send_file
 from elasticsearch import Elasticsearch
-
-companies = [{"id": 1, "name": "Company One"}, {"id": 2, "name": "Company Two"}]
+from datetime import datetime
+import os
+import csv 
 
 api = Flask(__name__)
 
@@ -27,13 +28,19 @@ def get_start_read_all():
   index = request.args.get('index')
   try:
     elastic_client = Elasticsearch([{'host': 'localhost', 'port': 9200}])
-    doc = {
-      'task': 'This is a search task',
-      'description': 'Search data by index and size'
-    }
-    resp = elastic_client.index(index=index, document=doc)
+    resp_search = elastic_client.search(index=index, query={"match_all": {}})
+    csv_dir  = './csv/'
+    csv_filename = '{timestamp}_{filename}'.format(filename=index, timestamp=datetime.now().strftime("%Y%m%d%H%M%S"))
+    csv_file = csv_filename + '.csv'
+    csv_path = os.path.join(csv_dir, csv_file)
+    csv_column = resp_search['hits']['hits'][0].keys()
+    with open(csv_path, 'w+') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=csv_column)
+        writer.writeheader()
+        for data in resp_search['hits']['hits']:
+            writer.writerow(data)
     result = {
-      'job_id': resp['_id']
+      'job_id': csv_filename
     }
     return json.dumps(result)
   except Exception as err:
@@ -43,7 +50,12 @@ def get_start_read_all():
 def get_read_all():
   job_id = request.args.get('job_id')
   try:
-    elastic_client = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+    csv_dir  = "./csv"
+    csv_file = "{filename}.csv".format(filename=job_id)
+    csv_path = os.path.join(csv_dir, csv_file)
+    if not os.path.isfile(csv_path):
+        return "File not found: file %s was not found on the server" % csv_file
+    return send_file(csv_path, as_attachment=True, attachment_filename=csv_file)
   except Exception as err:
     print(err)
 
