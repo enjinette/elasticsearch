@@ -21,7 +21,7 @@ def get_read():
       result['data'].append(hit)
     return json.dumps(result)
   except Exception as err:
-    print(err)
+    return 'Error index not found'
 
 @api.route('/start_read_all', methods=['GET'])
 def get_start_read_all():
@@ -44,7 +44,7 @@ def get_start_read_all():
     }
     return json.dumps(result)
   except Exception as err:
-    print(err)
+    return 'Error index not found'
 
 @api.route('/read_all', methods=['GET'])
 def get_read_all():
@@ -57,7 +57,7 @@ def get_read_all():
         return "File not found: file %s was not found on the server" % csv_file
     return send_file(csv_path, as_attachment=True, attachment_filename=csv_file)
   except Exception as err:
-    print(err)
+    return 'Error job_id not found'
 
 if __name__ == '__main__':
     api.run() 
